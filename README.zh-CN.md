@@ -6,7 +6,7 @@
 
 ## 快速开始
 
-Windows：把 `pi-windows-x64.exe` 放到需要的位置后运行。
+Windows：双击 `pi-windows-x64.exe`，通过 Windows PowerShell 启动，使用较大的窗口和 Consolas 字体。从已有终端启动时继续使用原终端，不修改 PowerShell 配置文件或持久化控制台设置。
 
 Linux：
 
@@ -26,6 +26,17 @@ SoloMux 已内置默认接口地址，无须自己添加提供商：
 3. 程序自动加载账号可用的对话模型。输入 `/model` 选择模型，默认使用 `solo-auto`。
 
 登录凭据会保存在当前工作区的 `.pi-portable/agent/auth.json` 中，重启后继续使用。`/solomux-models` 可手动刷新模型；重新登录可更换密钥。
+
+### 终端操作
+
+默认使用 Pi 深色主题、带留白的输入框、隐藏思考正文，以及适应窗口宽度的底部信息栏。通过 `/settings` 保存的显示设置会保留。
+
+- **Ctrl+O**：展开或折叠工具输出；也可输入 `/tools`、`/tools show`、`/tools hide`。
+- **Ctrl+T**：显示或隐藏思考正文。
+- **Esc**：停止当前操作。
+- `/model`、`/resume`、`/settings`：选择模型、恢复会话、修改显示设置。
+
+折叠后仍保留简短预览。折叠由 Pi 提供，在 PowerShell 中同样可用；PowerShell 本身不负责折叠终端输出。非交互命令、JSON/RPC 输出和 Linux 的启动方式保持正常行为。
 
 ### 修改配置
 

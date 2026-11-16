@@ -127,6 +127,7 @@ def profile() -> dict[str, bytes]:
         'settings.json': b'{}\n',
         'auth.json': b'{}\n',
         'extensions/solomux.ts': (ROOT / 'runtime/extensions/solomux.ts').read_bytes(),
+        'extensions/portable-ui.ts': (ROOT / 'runtime/extensions/portable-ui.ts').read_bytes(),
     }
 
 
@@ -242,9 +243,11 @@ def main() -> None:
     parser.add_argument('--output-dir', type=Path, help='Build into a staging directory')
     parser.add_argument('--zip', action='store_true', help='Also produce optional ZIP distributions')
     args = parser.parse_args()
-    previous_manifest = ROOT / 'dist/manifest.json'
     if args.output_dir:
         DIST = args.output_dir.resolve()
+    previous_manifest = DIST / 'manifest.json'
+    if not previous_manifest.exists():
+        previous_manifest = ROOT / 'dist/manifest.json'
     for folder in (BUILD, TOOLS, DIST):
         folder.mkdir(parents=True, exist_ok=True)
     go = ensure_go()

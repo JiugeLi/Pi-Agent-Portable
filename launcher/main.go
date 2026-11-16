@@ -72,6 +72,7 @@ func run() (int, error) {
 	}
 	args := append([]string{filepath.Join(runtimeDir, "bootstrap.mjs")}, os.Args[1:]...)
 	cmd := exec.Command(node, args...)
+	cmd = interactiveCommand(cmd)
 	cmd.Dir = cwd
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	// Child inherits the console/terminal and receives Ctrl+C itself. Keep the
@@ -79,7 +80,10 @@ func run() (int, error) {
 	interrupts := make(chan os.Signal, 2)
 	signal.Notify(interrupts, os.Interrupt)
 	defer signal.Stop(interrupts)
-	cmd.Env = append(os.Environ(), "PI_PORTABLE_STATE="+state, "PI_PORTABLE_RUNTIME="+runtimeDir, "PI_PORTABLE_CONFIG_FILE="+configFile)
+	if cmd.Env == nil {
+		cmd.Env = os.Environ()
+	}
+	cmd.Env = append(cmd.Env, "PI_PORTABLE_STATE="+state, "PI_PORTABLE_RUNTIME="+runtimeDir, "PI_PORTABLE_CONFIG_FILE="+configFile)
 	err = cmd.Run()
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {

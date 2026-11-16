@@ -6,7 +6,7 @@ Download: [Windows](https://github.com/JiugeLi/Pi-Agent-Portable/releases/latest
 
 ## Quick start
 
-Windows: run `pi-windows-x64.exe`.
+Windows: double-click `pi-windows-x64.exe` to start through Windows PowerShell with a larger window and Consolas font. Starting from an existing terminal keeps that terminal. PowerShell profiles and saved console defaults are not changed.
 
 Linux:
 
@@ -26,6 +26,17 @@ SoloMux is included with its default API endpoint:
 3. Available chat models are loaded automatically. Use `/model` to select one. The default is `solo-auto`.
 
 Login credentials are saved in the current workspace's `.pi-portable/agent/auth.json` and survive restarts. Use `/solomux-models` to refresh the catalog, or sign in again to replace a key.
+
+### Terminal controls
+
+The default display uses Pi's dark theme, padded input, hidden thinking text, and a footer that fits the window width. Saved display choices in `/settings` are preserved.
+
+- **Ctrl+O**: expand or collapse tool output. You can also enter `/tools`, `/tools show`, or `/tools hide`.
+- **Ctrl+T**: show or hide thinking text.
+- **Esc**: stop the current operation.
+- `/model`, `/resume`, `/settings`: select a model, reopen a session, or change the display.
+
+Collapsed tools still show a short preview. Folding is provided by Pi, including when it runs in PowerShell. PowerShell itself does not fold terminal output. Noninteractive commands, JSON/RPC output, and Linux startup retain their normal launch behavior.
 
 ### Edit configuration
 

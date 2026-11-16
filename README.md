@@ -6,6 +6,8 @@ Portable, self-contained builds of the original Pi coding agent for Windows and 
 
 SoloMux is included as a native API-key provider. Run `/login solomux`, enter your key, and available chat models load automatically. You can also enter a key in the generated configuration. No personal credentials are included in the downloads.
 
+On Windows, double-clicking starts through PowerShell with Consolas and a wider window. Existing terminals are reused. Pi uses a readable dark theme and a footer that fits the window. **Ctrl+O** or `/tools` toggles tool output; **Ctrl+T** toggles thinking text. Display preferences remain editable in `/settings`.
+
 ## Download
 
 - [Windows x86_64](https://github.com/JiugeLi/Pi-Agent-Portable/releases/latest/download/pi-windows-x64.exe)
@@ -27,7 +29,7 @@ Build on Windows with Python 3.10+ and an installed `@earendil-works/pi-coding-a
 
 ```powershell
 python scripts/build.py
-node --test tests/config.test.mjs
+node --test tests/config.test.mjs tests/portable-ui.test.mjs
 python scripts/test_launcher.py
 python scripts/audit_release.py
 ```

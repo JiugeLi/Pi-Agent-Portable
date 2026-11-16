@@ -31,13 +31,15 @@ function seed(source, target) {
   }
 }
 seed(provision, agent);
-const managedExtension = path.join(agent, 'extensions', 'solomux.ts');
-const extensionSource = fs.readFileSync(path.join(provision, 'extensions', 'solomux.ts'));
-if (!fs.readFileSync(managedExtension).equals(extensionSource)) {
-  const migration = path.join(state, 'migrations');
-  fs.mkdirSync(migration, { recursive: true, mode: 0o700 });
-  fs.copyFileSync(managedExtension, path.join(migration, `solomux-${Date.now()}.ts`));
-  fs.writeFileSync(managedExtension, extensionSource, { mode: 0o600 });
+for (const name of ['solomux.ts', 'portable-ui.ts']) {
+  const managedExtension = path.join(agent, 'extensions', name);
+  const extensionSource = fs.readFileSync(path.join(provision, 'extensions', name));
+  if (!fs.readFileSync(managedExtension).equals(extensionSource)) {
+    const migration = path.join(state, 'migrations');
+    fs.mkdirSync(migration, { recursive: true, mode: 0o700 });
+    fs.copyFileSync(managedExtension, path.join(migration, `${name}-${Date.now()}.bak`));
+    fs.writeFileSync(managedExtension, extensionSource, { mode: 0o600 });
+  }
 }
 applyConfig(config, agent);
 
@@ -68,6 +70,11 @@ process.env[pathKey] = [path.join(runtime, 'node'), path.join(runtime, 'node', '
 
 const settingsFile = path.join(agent, 'settings.json');
 const settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8'));
+// Seed display preferences once. Respect later /settings changes.
+settings.theme ??= 'dark';
+settings.quietStartup ??= 'header';
+settings.editorPaddingX ??= 1;
+settings.hideThinkingBlock ??= true;
 settings.defaultProvider = 'solomux';
 settings.defaultModel = config.defaultModel;
 settings.defaultThinkingLevel = config.thinkingLevel;
