@@ -18,12 +18,13 @@ root = args.work_dir.resolve()
 app, cwd = root / 'app', root / '工作 project'
 app.mkdir(parents=True, exist_ok=True)
 cwd.mkdir(parents=True, exist_ok=True)
-if (cwd / '.pi-portable').exists(): raise RuntimeError('Use a fresh work directory for cold extraction verification.')
+project = app / 'pi-project'
+if project.exists(): raise RuntimeError('Use a fresh work directory for cold extraction verification.')
 binary = 'pi-windows-x64.exe' if args.platform == 'windows' else 'pi-linux-x64'
 exe = app / binary
 shutil.copyfile(release / binary, exe)
 if args.platform == 'linux': exe.chmod(0o700)
-env = {k:v for k,v in os.environ.items() if k not in ('PI_PORTABLE_CONFIG','PI_CODING_AGENT_DIR','PI_PACKAGE_DIR','SOLOAPI_API_KEY','SOLOMUX_API_KEY','PI_PORTABLE_API_KEY','NODE_OPTIONS','NODE_PATH')}
+env = {k:v for k,v in os.environ.items() if k not in ('PI_PORTABLE_PROJECT','PI_PORTABLE_CONFIG','PI_CODING_AGENT_DIR','PI_CODING_AGENT_SESSION_DIR','PI_PACKAGE_DIR','SOLOAPI_API_KEY','SOLOMUX_API_KEY','PI_PORTABLE_API_KEY','NODE_OPTIONS','NODE_PATH')}
 def run(options, timeout=240):
     r = subprocess.run([str(exe), *options], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
         capture_output=True, encoding='utf-8', errors='replace', timeout=timeout)
@@ -33,14 +34,17 @@ print('Checking automatic config generation and real extraction progress...', fl
 cold = run(['--portable-diagnostics'])
 info = json.loads(cold.stdout)
 assert info['provider'] == 'solomux' and info['apiKeyConfigured'] is False
-assert Path(info['cwd']) == cwd and Path(info['configFile']) == app / 'config.json'
-assert json.loads((app / 'config.json').read_text())['apiKey'] == ''
-assert (app / 'README.zh-CN.md').exists() and (app / 'README.en.md').exists()
+assert Path(info['cwd']) == project and Path(info['projectDir']) == project
+assert Path(info['configFile']) == project / 'config.json'
+assert json.loads((project / 'config.json').read_text())['apiKey'] == ''
+assert (project / 'README.zh-CN.md').exists() and (project / 'README.en.md').exists()
+assert (project / '.gitignore').exists()
+assert not (cwd / '.pi-portable').exists() and not (app / 'config.json').exists()
 samples = [int(x) for x in re.findall(r'\] +(\d+)%', cold.stderr)]
 assert len(samples) >= 2 and samples[0] == 0 and samples[-1] == 100 and samples == sorted(samples)
 assert samples.count(100) == 1 and '准备完成' in cold.stderr
 assert (Path(info['runtime']) / '.complete').exists()
-config = app / 'config.json'
+config = project / 'config.json'
 original = config.read_bytes()
 edited = json.loads(original); edited['defaultModel'] = 'config-edit-check'
 config.write_text(json.dumps(edited))
@@ -74,8 +78,8 @@ prompt = ('Acceptance check. Do not inspect configuration, hidden files, credent
           'Use write to create portable-acceptance.txt containing FIRST_VALUE. Use read to check it. '
           'Use edit to replace FIRST_VALUE with SECOND_VALUE. Use bash to run cat portable-acceptance.txt. '
           'Finish with PORTABLE_TEST_OK. Use all four tools.')
-reply = run(['--no-session','--mode','json','-p','--tools','read,write,edit,bash',prompt], timeout=240)
-assert (cwd / 'portable-acceptance.txt').read_text().strip() == 'SECOND_VALUE'
+reply = run(['--mode','json','-p','--tools','read,write,edit,bash',prompt], timeout=240)
+assert (project / 'portable-acceptance.txt').read_text().strip() == 'SECOND_VALUE'
 assert 'PORTABLE_TEST_OK' in reply.stdout
 tools = set()
 for line in reply.stdout.splitlines():
@@ -84,6 +88,11 @@ for line in reply.stdout.splitlines():
         if e.get('type')=='tool_execution_start': tools.add(e['toolName'])
     except ValueError: pass
 assert {'read','write','edit','bash'} <= tools
+saved = subprocess.run([str(node), str(Path(__file__).with_name('verify_project_sessions.mjs')), 'real', str(info_file)],
+    cwd=project, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True,
+    encoding='utf-8', errors='replace', timeout=60)
+assert saved.returncode == 0, 'Real session was not saved and restored by the native resume catalogue'
+saved_report = json.loads(saved.stdout)
 print('Checking key-only config with built-in defaults...', flush=True)
 private = json.loads(args.private_config.read_text(encoding='utf-8-sig'))
 config.write_text(json.dumps({'apiKey': private['apiKey']}))
@@ -92,9 +101,9 @@ try:
     assert 'CONFIG_KEY_OK' in configured_reply.stdout
 finally:
     config.write_bytes(original)
-report = { 'platform': args.platform, 'autoConfigAndBilingualReadmes': True,
+report = { 'platform': args.platform, 'autoProjectFolder': True, 'projectConfigAndWorkingDirectory': True, 'autoConfigAndBilingualReadmes': True,
     'configEditPreserved': True, 'coldProgressSamples': len(samples), 'progressMonotonic': True,
-    'jsonStdoutClean': True, 'cachedLaunchQuiet': True, **login_report,
+    'jsonStdoutClean': True, 'cachedLaunchQuiet': True, **login_report, **saved_report,
     'loginSurvivesRestart': True, 'ambientKeysDoNotReplaceSavedLogin': True,
     'keyOnlyConfigRealReply': True, 'originalToolsExecuted': sorted(tools), 'realModelReply': True }
 (release / ('acceptance-native-'+args.platform+'.json')).write_text(json.dumps(report,indent=2)+'\n')

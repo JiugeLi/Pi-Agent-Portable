@@ -2,6 +2,7 @@
 .tools/
 dist/
 .pi-portable/
+pi-project/
 **/.pi-portable/
 __pycache__/
 *.pyc

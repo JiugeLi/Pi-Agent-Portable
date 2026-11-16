@@ -15,7 +15,7 @@ chmod +x ./pi-linux-x64
 ./pi-linux-x64
 ```
 
-On first launch, the app shows extraction progress and creates `config.json`, a Chinese README and an English README beside the executable. Existing configuration files are preserved.
+On first launch, the app creates a reusable `pi-project` folder beside the executable. It places `config.json`, both READMEs, saved sessions and the extracted runtime inside that project. Existing configuration files are preserved.
 
 ### Sign in to SoloMux
 
@@ -40,7 +40,7 @@ Collapsed tools still show a short preview. Folding is provided by Pi, including
 
 ### Edit configuration
 
-Alternatively, fill `apiKey` in the generated `config.json` and restart:
+Alternatively, fill `apiKey` in `pi-project/config.json` and restart:
 
 ```json
 {
@@ -54,13 +54,29 @@ Alternatively, fill `apiKey` in the generated `config.json` and restart:
 
 Usually only `apiKey` needs changing. Optional `headers` and `compat` objects support gateway compatibility settings. `SOLOMUX_API_KEY` is also supported. Set `PI_PORTABLE_CONFIG` to use a different configuration file. An explicit nonempty config key takes precedence; leave it empty when managing credentials through `/login`.
 
-## Working directory
+## Project folder and saved sessions
 
-Pi uses the directory from which it is launched and retains full file and command permissions. This directory is not a sandbox. Existing HOME, SSH, Git and system tools remain available.
+Pi works in `pi-project`, regardless of which directory you launch the executable from. Repeated launches reuse the same config, login and sessions. The project is not a sandbox; existing HOME, SSH, Git and system tools remain available.
 
-On first launch, the bundled runtime is extracted to `.pi-portable/runtime/` in the working directory. Progress includes a bar, percentage, file count, data size and elapsed time. Pi starts automatically when preparation finishes. Subsequent launches reuse the runtime. A new working directory has its own workspace data, credentials and sessions.
+```text
+pi-windows-x64.exe  (or pi-linux-x64)
+pi-project/
+  config.json
+  README.en.md
+  README.zh-CN.md
+  .gitignore
+  .pi-portable/
+    agent/          saved login, settings and sessions/
+    runtime/        extracted bundled runtime
+```
 
-The generated configuration and both READMEs live beside the executable. Workspace caches, sessions and temporary files live under `.pi-portable/`. Your existing `~/.pi/agent` is unchanged. Run `--portable-diagnostics` to inspect paths and versions without displaying credentials.
+Sessions are saved automatically. Enter `/resume` to select a past chat, `/new` to start another, or launch with `--resume` to open the picker. `--no-session` deliberately disables saving. Explicit upstream session-directory overrides still take precedence.
+
+Use `--project <folder>` or `PI_PORTABLE_PROJECT` for a different project. Relative paths are resolved from the launch directory. Each project keeps its own config and sessions. `PI_PORTABLE_CONFIG` can still override the config file location. Run `--portable-diagnostics` to inspect the effective paths without displaying keys.
+
+On default-project startup, old adjacent config files and old `.pi-portable/agent` data in the executable or launch directory are imported without changing their originals. Existing project config and logins are not overwritten. Legacy sessions keep their original working-directory metadata and appear in the new project's native resume catalogue; after switching working directories, use the picker's **Tab** scope switch to view all chats if needed. Only these known locations are checked; use `--session <file>` to open an older session stored elsewhere. Your existing `~/.pi/agent` is unchanged.
+
+The generated project `.gitignore` excludes `config.json` and `.pi-portable/`. Do not share either: they can contain credentials and private conversations. Runtime extraction shows progress on first launch; later launches reuse the runtime.
 
 An internet connection is required for model requests and catalog refreshes. No personal API key is embedded. Do not publicly share configuration or credential files after entering a key.
 
@@ -68,4 +84,4 @@ An internet connection is required for model requests and catalog refreshes. No 
 
 - Windows 10 / Windows Server 2016 or later, x86_64.
 - Linux x86_64, glibc >= 2.28, kernel >= 4.18, with Bash and basic system tools. Alpine/musl is not supported.
-- Writable executable and working directories, with enough free space to extract the runtime.
+- A writable project folder (the executable folder must be writable when creating the default project), with enough free space to extract the runtime.

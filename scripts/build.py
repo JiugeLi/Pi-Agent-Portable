@@ -226,9 +226,9 @@ def distribution(output: Path, platform: str) -> Path:
     example = (ROOT / 'config/pi.config.example.json').read_bytes()
     if json.loads(example)['apiKey'] != '':
         raise RuntimeError('Refusing to publish a configuration template containing a key.')
-    files = {output.name: output.read_bytes(), 'config.json': example,
-             'README.zh-CN.md': (ROOT / 'README.zh-CN.md').read_bytes(),
-             'README.en.md': (ROOT / 'README.en.md').read_bytes()}
+    files = {output.name: output.read_bytes(), 'pi-project/config.json': example,
+             'pi-project/README.zh-CN.md': (ROOT / 'README.zh-CN.md').read_bytes(),
+             'pi-project/README.en.md': (ROOT / 'README.en.md').read_bytes()}
     checksums = ''.join(digest(data) + '  ' + name + '\n' for name, data in files.items()).encode()
     with zipfile.ZipFile(target, 'w') as bundle:
         for name, data in {**files, 'SHA256SUMS.txt': checksums}.items():
@@ -256,7 +256,7 @@ def main() -> None:
     if pi_version != '1.3.0':
         raise RuntimeError('Revalidate the runtime bootstrap before changing the Pi version.')
     manifest = {'pi': pi_version, 'node': NODE_VERSION, 'go': GO_VERSION,
-                'credentialFree': True, 'configuration': 'auto-generated config.json beside executable', 'artifacts': []}
+                'credentialFree': True, 'configuration': 'auto-generated pi-project/config.json beside executable; --project overrides project', 'artifacts': []}
     base = None if args.launcher_only else base_payload(public)
     previous = json.loads(previous_manifest.read_text()) if args.launcher_only else None
     embedded = ROOT / 'launcher/payload.zip'

@@ -15,7 +15,7 @@ chmod +x ./pi-linux-x64
 ./pi-linux-x64
 ```
 
-首次启动会显示展开进度，并在程序旁自动生成 `config.json`、中文和英文 README。已有配置不会被覆盖。
+首次启动会在程序旁自动创建并复用 `pi-project` 项目文件夹，配置 `config.json`、中英文 README、会话和运行环境均放在项目文件夹内。已有配置不会被覆盖。
 
 ### 登录 SoloMux
 
@@ -40,7 +40,7 @@ SoloMux 已内置默认接口地址，无须自己添加提供商：
 
 ### 修改配置
 
-也可打开自动生成的 `config.json`，填写 `apiKey`，重启生效：
+也可打开 `pi-project/config.json`，填写 `apiKey`，重启生效：
 
 ```json
 {
@@ -54,13 +54,29 @@ SoloMux 已内置默认接口地址，无须自己添加提供商：
 
 通常只需填写 `apiKey`。其他字段可保留默认值；`headers`、`compat` 是可选的网关兼容设置。也支持环境变量 `SOLOMUX_API_KEY`，或使用 `PI_PORTABLE_CONFIG` 指定其他配置文件。配置文件中的非空密钥优先；使用 `/login` 管理密钥时保持 `apiKey` 为空。
 
-## 运行位置
+## 项目文件夹与历史会话
 
-Pi 使用启动时的当前目录作为工作目录，保留完整文件和命令权限；当前目录不是沙箱。原有 HOME、SSH、Git 和系统命令仍可使用。
+Pi 以 `pi-project` 为工作目录，从不同目录启动同一个程序，也会复用同一份配置、登录状态和会话。项目文件夹不是沙箱，原有 HOME、SSH、Git 和系统命令仍可使用。
 
-首次启动把自带运行环境展开到工作目录的 `.pi-portable/runtime/`，显示进度条、百分比、文件数、数据量和用时。完成后自动进入 Pi；后续在同一目录直接复用。换到新的工作目录会生成独立的配置、凭据和会话目录。
+```text
+pi-windows-x64.exe（或 pi-linux-x64）
+pi-project/
+  config.json
+  README.en.md
+  README.zh-CN.md
+  .gitignore
+  .pi-portable/
+    agent/          登录状态、设置和 sessions/ 历史会话
+    runtime/        解压后的内置运行环境
+```
 
-`config.json` 和两份 README 保存在程序旁。工作区的模型缓存、会话和临时文件保存在 `.pi-portable/`，不修改原来的 `~/.pi/agent`。检查路径和版本可运行 `--portable-diagnostics`，输出不含密钥。
+会话自动保存。输入 `/resume` 选择历史会话，`/new` 开启新会话；也可启动时加 `--resume` 直接打开选择器。显式使用 `--no-session` 时不保存会话。原版 Pi 的显式会话目录覆盖设置仍优先生效。
+
+通过 `--project <文件夹>` 或 `PI_PORTABLE_PROJECT` 选择其他项目。相对路径按启动目录解析，每个项目分别保存配置和会话。`PI_PORTABLE_CONFIG` 仍可指定其他配置文件。运行 `--portable-diagnostics` 可查看实际路径，输出不含密钥。
+
+默认项目启动时，会检查程序目录与启动目录中的旧配置和旧 `.pi-portable/agent`，复制到项目内，保留原文件，不覆盖项目已有配置与登录状态。旧会话保留原工作目录信息，并列入新项目的原生恢复目录；恢复旧会话、切换工作目录后，如需查看全部会话，可在选择器中按 **Tab** 切换范围。仅检查这两个已知位置；其他位置的旧会话可通过 `--session <文件>` 打开，不修改原来的 `~/.pi/agent`。
+
+自动生成的项目 `.gitignore` 会忽略 `config.json` 和 `.pi-portable/`。两者可能包含密钥和私人对话，请勿公开分享。首次启动显示运行环境解压进度，后续直接复用。
 
 模型调用及刷新列表需要联网。程序不含个人密钥，填写过密钥的配置和凭据文件请勿公开分享。
 
@@ -68,4 +84,4 @@ Pi 使用启动时的当前目录作为工作目录，保留完整文件和命�
 
 - Windows 10 / Windows Server 2016 及以上，x86_64。
 - Linux x86_64，glibc >= 2.28，内核 >= 4.18；已有 Bash 和基本命令，不支持 Alpine/musl。
-- 程序目录和工作目录可写，有足够磁盘空间用于展开运行环境。
+- 项目目录可写，创建默认项目时程序目录也需要可写，并有足够磁盘空间用于展开运行环境。

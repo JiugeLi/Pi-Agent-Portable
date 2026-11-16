@@ -41,16 +41,30 @@ func run() (int, error) {
 	if err != nil {
 		return 1, err
 	}
+	project, cliArgs, explicitProject, err := resolveProject(cwd, executable, os.Args[1:], os.Getenv("PI_PORTABLE_PROJECT"))
+	if err != nil {
+		return 1, err
+	}
+	if err := os.MkdirAll(project, 0700); err != nil {
+		return 1, err
+	}
+	var legacyDirs []string
+	if !explicitProject {
+		legacyDirs = []string{filepath.Dir(executable), cwd}
+	}
 	configFile := os.Getenv("PI_PORTABLE_CONFIG")
 	if configFile == "" {
-		configFile = filepath.Join(filepath.Dir(executable), "config.json")
+		configFile = filepath.Join(project, "config.json")
 	}
 	configFile, err = filepath.Abs(configFile)
 	if err != nil {
 		return 1, err
 	}
-	state := filepath.Join(cwd, ".pi-portable")
+	state := filepath.Join(project, ".pi-portable")
 	if err := os.MkdirAll(state, 0700); err != nil {
+		return 1, err
+	}
+	if err := importLegacyProjects(project, legacyDirs); err != nil {
 		return 1, err
 	}
 	sum := sha256.Sum256(payload)
@@ -67,13 +81,13 @@ func run() (int, error) {
 	if runtime.GOOS == "windows" {
 		node = filepath.Join(runtimeDir, "node", "node.exe")
 	}
-	if err := ensureDefaultFiles(runtimeDir, filepath.Dir(executable), configFile); err != nil {
+	if err := ensureDefaultFiles(runtimeDir, project, configFile, legacyDirs...); err != nil {
 		return 1, err
 	}
-	args := append([]string{filepath.Join(runtimeDir, "bootstrap.mjs")}, os.Args[1:]...)
+	args := append([]string{filepath.Join(runtimeDir, "bootstrap.mjs")}, cliArgs...)
 	cmd := exec.Command(node, args...)
 	cmd = interactiveCommand(cmd)
-	cmd.Dir = cwd
+	cmd.Dir = project
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	// Child inherits the console/terminal and receives Ctrl+C itself. Keep the
 	// wrapper alive until the original Pi has restored the terminal and exited.
@@ -83,7 +97,7 @@ func run() (int, error) {
 	if cmd.Env == nil {
 		cmd.Env = os.Environ()
 	}
-	cmd.Env = append(cmd.Env, "PI_PORTABLE_STATE="+state, "PI_PORTABLE_RUNTIME="+runtimeDir, "PI_PORTABLE_CONFIG_FILE="+configFile)
+	cmd.Env = append(cmd.Env, "PI_PORTABLE_PROJECT="+project, "PI_PORTABLE_STATE="+state, "PI_PORTABLE_RUNTIME="+runtimeDir, "PI_PORTABLE_CONFIG_FILE="+configFile)
 	err = cmd.Run()
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
@@ -92,7 +106,7 @@ func run() (int, error) {
 	return 0, err
 }
 
-func ensureDefaultFiles(runtimeDir, appDir, configFile string) error {
+func ensureDefaultFiles(runtimeDir, appDir, configFile string, legacyDirs ...string) error {
 	for _, name := range []string{"config.json", "README.zh-CN.md", "README.en.md"} {
 		target := filepath.Join(appDir, name)
 		if name == "config.json" {
@@ -106,9 +120,17 @@ func ensureDefaultFiles(runtimeDir, appDir, configFile string) error {
 		}
 		source := filepath.Join(runtimeDir, "defaults", name)
 		if name == "config.json" {
-			legacy := filepath.Join(appDir, "pi.config.json")
-			if _, err := os.Stat(legacy); err == nil {
-				source = legacy
+			for _, dir := range append([]string{appDir}, legacyDirs...) {
+				for _, oldName := range []string{"config.json", "pi.config.json"} {
+					legacy := filepath.Join(dir, oldName)
+					if info, err := os.Lstat(legacy); err == nil && info.Mode().IsRegular() {
+						source = legacy
+						break
+					}
+				}
+				if source != filepath.Join(runtimeDir, "defaults", name) {
+					break
+				}
 			}
 		}
 		data, err := os.ReadFile(source)

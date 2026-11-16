@@ -2,7 +2,7 @@
 
 [中文说明](README.zh-CN.md) · [English guide](README.en.md)
 
-Portable, self-contained builds of the original Pi coding agent for Windows and Linux x86_64. The launcher includes its runtime, shows real extraction progress, and generates `config.json` plus both guides on first launch.
+Portable, self-contained builds of the original Pi coding agent for Windows and Linux x86_64. The launcher creates a reusable `pi-project` beside the executable and puts config, saved sessions, guides and its bundled runtime inside it.
 
 SoloMux is included as a native API-key provider. Run `/login solomux`, enter your key, and available chat models load automatically. You can also enter a key in the generated configuration. No personal credentials are included in the downloads.
 
@@ -21,7 +21,7 @@ chmod +x ./pi-linux-x64
 ./pi-linux-x64
 ```
 
-The agent starts in your current working directory and keeps full file and command permissions. Windows requires Windows 10 / Server 2016 or later. Linux requires glibc >= 2.28, kernel >= 4.18, Bash and basic system tools; Alpine/musl is not supported.
+The agent works in `pi-project` and keeps full file and command permissions. `/resume` recalls saved chats across launches. Set `--project <folder>` or `PI_PORTABLE_PROJECT` for another project; edit `pi-project/config.json` for configuration. Windows requires Windows 10 / Server 2016 or later. Linux requires glibc >= 2.28, kernel >= 4.18, Bash and basic system tools; Alpine/musl is not supported.
 
 ## Build and test
 

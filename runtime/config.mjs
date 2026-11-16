@@ -6,7 +6,7 @@ function invalid(message) { throw new Error(`Pi configuration: ${message}`); }
 export function loadConfig(filename, env = process.env) {
   let config;
   try { config = JSON.parse(fs.readFileSync(filename, 'utf8').replace(/^\uFEFF/, '')); }
-  catch { invalid('cannot read valid JSON; edit config.json beside the executable.'); }
+  catch { invalid('cannot read valid JSON; edit config.json in the project folder.'); }
   if (!config || typeof config !== 'object' || Array.isArray(config)) invalid('expected a JSON object.');
   config = { baseUrl: 'https://solomux.com/v1', api: 'openai-responses', apiKey: '',
     defaultModel: 'solo-auto', thinkingLevel: 'medium', ...config };
