@@ -30,7 +30,11 @@ func ownsConsole() bool {
 }
 
 func interactiveCommand(cmd *exec.Cmd) *exec.Cmd {
-	if len(os.Args) != 1 || !ownsConsole() {
+	owned := ownsConsole()
+	if owned {
+		setupConsoleIcon()
+	}
+	if len(os.Args) != 1 || !owned {
 		return cmd
 	}
 	powershell := filepath.Join(os.Getenv("SystemRoot"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe")

@@ -10,6 +10,7 @@ __pycache__/
 .env.*
 private/
 payload.zip
+*.syso
 pi.config.json
 config.json
 !config/pi.config.example.json

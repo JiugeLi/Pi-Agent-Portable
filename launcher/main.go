@@ -33,6 +33,10 @@ func main() {
 }
 
 func run() (int, error) {
+	if relaunched, err := relaunchIconConsole(); err != nil || relaunched {
+		return 0, err
+	}
+	initializeConsoleIcon()
 	cwd, err := os.Getwd()
 	if err != nil {
 		return 1, err

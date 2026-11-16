@@ -25,6 +25,7 @@ PROFILE = HOME / '.pi/agent'
 GIT = Path('C:/Program Files/Git')
 NODE_VERSION = 'v24.22.2'
 GO_VERSION = 'go1.27.3'
+RSRC_VERSION = 'v0.10.2'
 
 
 def digest(data: bytes) -> str:
@@ -67,6 +68,17 @@ def ensure_go() -> Path:
     with zipfile.ZipFile(src) as bundle:
         bundle.extractall(TOOLS)
     return go
+
+
+def windows_resources(go: Path) -> Path:
+    tool = TOOLS / ('rsrc-' + RSRC_VERSION) / 'rsrc.exe'
+    if not tool.exists():
+        env = dict(os.environ, GOBIN=str(tool.parent), GOMODCACHE=str(TOOLS / 'go-mod'),
+                   GOCACHE=str(TOOLS / 'go-cache'), GOOS='windows', GOARCH='amd64')
+        subprocess.run([str(go), 'install', 'github.com/akavel/rsrc@' + RSRC_VERSION], cwd=ROOT, env=env, check=True)
+    target = ROOT / 'launcher/rsrc_windows_amd64.syso'
+    subprocess.run([str(tool), '-arch', 'amd64', '-ico', str(ROOT / 'assets/pi.ico'), '-o', str(target)], cwd=ROOT, check=True)
+    return target
 
 
 def imports(file: Path) -> list[str]:
@@ -260,6 +272,7 @@ def main() -> None:
     base = None if args.launcher_only else base_payload(public)
     previous = json.loads(previous_manifest.read_text()) if args.launcher_only else None
     embedded = ROOT / 'launcher/payload.zip'
+    icon_resource = None
     try:
         for platform in ('windows', 'linux'):
             if args.launcher_only:
@@ -279,6 +292,8 @@ def main() -> None:
             else:
                 source = payload(platform, base)
             shutil.copyfile(source, embedded)
+            if platform == 'windows':
+                icon_resource = windows_resources(go)
             filename = 'pi-windows-x64.exe' if platform == 'windows' else 'pi-linux-x64'
             output = DIST / filename
             env = dict(os.environ, GOOS=platform, GOARCH='amd64', CGO_ENABLED='0', GOCACHE=str(TOOLS / 'go-cache'))
@@ -292,6 +307,8 @@ def main() -> None:
                                               'sha256': digest(archive.read_bytes())})
     finally:
         embedded.unlink(missing_ok=True)
+        if icon_resource:
+            icon_resource.unlink(missing_ok=True)
     (DIST / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
     for name in ('README.zh-CN.md', 'README.en.md'):
         shutil.copyfile(ROOT / name, DIST / name)

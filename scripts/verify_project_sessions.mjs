@@ -40,7 +40,13 @@ if (mode === 'create') {
       const manager = SessionManager.open(session.path);
       assert.equal(manager.getCwd(), fixture.cwd, 'Migration changed session working-directory metadata');
       assert(JSON.stringify(manager.buildSessionContext().messages).includes(`FIXTURE_${fixture.name}`));
-      assert.equal(fs.readFileSync(fixture.path, 'utf8'), fixture.original, 'Original session changed');
+      const saved = fs.readFileSync(fixture.path, 'utf8');
+      if (fixture.name === 'legacy-one') {
+        assert.equal(saved, fixture.original, 'Original legacy session changed');
+      } else {
+        // Reopening a native project session can append model/thinking settings.
+        assert(saved.startsWith(fixture.original), 'Original session entries changed');
+      }
       return {path: session.path, name: fixture.name};
     });
     fs.writeFileSync(path.join(path.dirname(infoFile), 'resume-fixtures.json'), JSON.stringify(restored));

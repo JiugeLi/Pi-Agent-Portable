@@ -1,0 +1,8 @@
+<!-- Pi's original pixel logo and colors, from the pinned Pi 1.3.0
+     dist/modes/interactive/components/pi-logo.js (upstream MIT license). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>Pi</title>
+  <path fill="#e48a7a" d="M8 8h36v12H8z M32 20h12v12H32z"/>
+  <path fill="#4f8eb3" d="M8 20h12v36H8z M20 32h12v12H20z"/>
+  <path fill="#eab65d" d="M44 32h12v24H44z"/>
+</svg>
